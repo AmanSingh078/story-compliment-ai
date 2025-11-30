@@ -47,35 +47,30 @@ function App() {
     setShowComplimentPopup(false);
 
     try {
-      // Simulate analysis for demo purposes
-      const simulatedAnalysis = {
+      // For this simplified version, we'll generate a compliment directly in the frontend
+      // without calling the backend API
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Generate a sample compliment in Hindlish
+      const sampleCompliments = [
+        "Tumhara story dekh ke mujhe khushi mili! Tumhari positivity contagious hai yaar 😊",
+        "Wow, tumne kya ache se enjoy kiya apna moment! Tumhara enthusiasm visible hai 💫",
+        "Tumhare expressions mein jo energy hai na, woh inspire kar rahi hai! Keep shining 🌟",
+        "Tumhara story mere dil ko chhoo gaya! Tum itne genuine ho 💌",
+        "Tumhare har ek expression mein ek alag charm hai! Tum amazing ho ✨"
+      ];
+      
+      const randomCompliment = sampleCompliments[Math.floor(Math.random() * sampleCompliments.length)];
+      
+      setCompliment(randomCompliment);
+      setAnalysis({
         description: "User sharing a personal achievement or happy moment",
         emotion: "Joy",
         genderLikelihood: "Neutral",
         languagePreference: "hindlish"
-      };
-
-      const requestBody = {
-        analysis: simulatedAnalysis
-      };
-
-      // Updated API endpoint for Vercel
-      const response = await fetch('/api/compliment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate compliment');
-      }
-
-      setAnalysis(data.analysis);
-      setCompliment(data.compliment);
       setShowComplimentPopup(true);
     } catch (err) {
       setError(err.message);
