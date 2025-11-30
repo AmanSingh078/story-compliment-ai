@@ -17,6 +17,12 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increase limit for image data
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Ensure all responses are JSON
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 // Initialize Google Generative AI
 let genAI;
 try {
@@ -211,6 +217,9 @@ async function generateCompliment(genAI, analysis, mode, language, story) {
 // API endpoint to process story and generate compliment
 app.post('/api/compliment', upload.single('story'), async (req, res) => {
   try {
+    // Ensure response is JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     const { story, mode, language } = req.body;
     
     if (!story) {
@@ -247,6 +256,9 @@ app.post('/api/compliment', upload.single('story'), async (req, res) => {
   } catch (error) {
     console.error('Error processing story:', error);
     
+    // Ensure error response is JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     // Provide more specific error messages
     if (error.message && error.message.includes('API_KEY_INVALID')) {
       return res.status(500).json({ error: 'Invalid Gemini API key. Please check your API key configuration.' });
@@ -266,6 +278,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Handle all other routes by serving the index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({ error: 'Internal server error: ' + error.message });
 });
 
 // Export for Vercel

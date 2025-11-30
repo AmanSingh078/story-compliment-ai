@@ -162,12 +162,27 @@ class StoryComplimentAI {
                 body: JSON.stringify(requestData)
             });
             
+            // Check if response is OK
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `API error: ${response.status}`);
+                // Try to parse error response as JSON
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
+                } catch (jsonError) {
+                    // If JSON parsing fails, it's likely an HTML error page
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}...`);
+                }
             }
             
-            const data = await response.json();
+            // Try to parse successful response as JSON
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                const responseText = await response.text();
+                throw new Error(`Invalid response format: ${responseText.substring(0, 200)}...`);
+            }
             
             // Store in history
             const historyItem = {
