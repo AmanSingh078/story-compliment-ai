@@ -12,5 +12,12 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  // Add base path for Vercel deployment
+  base: '/',
+  // Configure build output for Vercel
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true,
   }
 });
