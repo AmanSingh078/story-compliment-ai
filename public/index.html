@@ -3,225 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StoryCompliment - Get Personalized Compliments</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 500px;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header {
-            margin-bottom: 30px;
-        }
-        
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-        
-        h1 {
-            color: #833ab4;
-            margin-bottom: 10px;
-        }
-        
-        .tagline {
-            color: #666;
-            font-size: 1.1rem;
-        }
-        
-        .story-box {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 2px dashed #ddd;
-        }
-        
-        .upload-area {
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #833ab4;
-        }
-        
-        .upload-text {
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .btn {
-            background: linear-gradient(to right, #833ab4, #fd1d1d);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .compliment-box {
-            background: linear-gradient(135deg, #833ab4, #fd1d1d);
-            border-radius: 15px;
-            padding: 25px;
-            color: white;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .compliment-box h2 {
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-        
-        .compliment-text {
-            font-size: 1.3rem;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-        
-        .actions {
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .action-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .compliment-text {
-                font-size: 1.1rem;
-            }
-        }
-    </style>
+    <title>StoryCompliment AI - Advanced Version</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">📸</div>
-            <h1>StoryCompliment</h1>
-            <p class="tagline">Share your moment, get personalized love</p>
-        </div>
-        
-        <div class="story-box">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
-                <p class="upload-text">Upload your photo or video</p>
-                <p class="upload-text">(Demo version - no actual upload)</p>
-                <button class="btn" id="shareBtn">Share Story</button>
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <span class="logo-icon">📸</span>
+                    <h1>StoryCompliment AI</h1>
+                </div>
+                <p class="tagline">Share your moments, receive personalized AI compliments</p>
             </div>
-        </div>
-        
-        <div class="compliment-box" id="complimentBox">
-            <h2>From Your Secret Admirer 💖</h2>
-            <p class="compliment-text" id="complimentText"></p>
-            <div class="actions">
-                <button class="action-btn">👍 Like</button>
-                <button class="action-btn">↗️ Share</button>
-                <button class="action-btn" id="closeBtn">Close</button>
-            </div>
-        </div>
+        </header>
+
+        <main class="app-main">
+            <!-- Story Creation Section -->
+            <section class="story-section" id="storySection">
+                <div class="story-creator">
+                    <div class="user-story-header">
+                        <div class="user-info">
+                            <div class="avatar-placeholder">👤</div>
+                            <span class="username">Your Story</span>
+                        </div>
+                        <div class="story-actions">
+                            <button class="camera-btn" id="cameraBtn">📷</button>
+                        </div>
+                    </div>
+
+                    <div class="media-upload-area">
+                        <div class="upload-placeholder" id="uploadPlaceholder">
+                            <div class="upload-icon">📁</div>
+                            <p class="upload-text">Upload a photo or video</p>
+                            <p class="upload-subtext">Click to browse or drag & drop</p>
+                        </div>
+                        <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;">
+                        <div class="media-preview" id="mediaPreview" style="display: none;">
+                            <img id="previewImage" src="" alt="Preview" style="display: none;">
+                            <div class="video-preview" id="videoPreview" style="display: none;">
+                                <p>🎥</p>
+                                <p>Video Preview</p>
+                            </div>
+                            <button class="remove-media" id="removeMedia">×</button>
+                        </div>
+                    </div>
+
+                    <div class="story-text-area">
+                        <label for="storyText">Your Story:</label>
+                        <textarea id="storyText" placeholder="Share what's on your mind..."></textarea>
+                    </div>
+
+                    <div class="story-options">
+                        <div class="compliment-mode-selector">
+                            <label for="complimentMode">Compliment Style:</label>
+                            <select id="complimentMode">
+                                <option value="auto">🤖 Auto Select</option>
+                                <option value="hype">🔥 Hype Mode</option>
+                                <option value="care">🤍 Soft Care</option>
+                                <option value="friend">🧸 Best Friend</option>
+                                <option value="soul">🌙 Deep Soul</option>
+                            </select>
+                        </div>
+
+                        <div class="language-selector">
+                            <label for="languageSelect">Language:</label>
+                            <select id="languageSelect">
+                                <option value="hindlish">Hindlish</option>
+                                <option value="english">English</option>
+                                <option value="hindi">Hindi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="share-btn" id="shareBtn">Share Story</button>
+                </div>
+            </section>
+
+            <!-- Loading Section -->
+            <section class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Analyzing your story with AI...</p>
+                    <p class="loading-subtext">Our Gemini AI is crafting a personalized compliment for you</p>
+                </div>
+            </section>
+
+            <!-- Compliment Display Section -->
+            <section class="compliment-section" id="complimentSection" style="display: none;">
+                <div class="compliment-card">
+                    <div class="compliment-header">
+                        <h2>💖 From Your Secret Admirer</h2>
+                    </div>
+                    <div class="compliment-content">
+                        <p class="compliment-text" id="complimentText"></p>
+                        <div class="compliment-analysis" id="complimentAnalysis"></div>
+                        <div class="compliment-meta">
+                            <span class="mode-tag" id="modeTag"></span>
+                            <span class="language-tag" id="languageTag"></span>
+                        </div>
+                    </div>
+                    <div class="compliment-actions">
+                        <button class="action-btn like-btn">👍 Like</button>
+                        <button class="action-btn share-result-btn">↗️ Share</button>
+                        <button class="action-btn close-btn" id="closeComplimentBtn">Close</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="history-section" id="historySection">
+                <h3>Your Recent Compliments</h3>
+                <div class="history-list" id="historyList">
+                    <p class="no-history">No compliments yet. Share a story to get started!</p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>Built with ❤️ using Google Gemini AI</p>
+        </footer>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const shareBtn = document.getElementById('shareBtn');
-            const complimentBox = document.getElementById('complimentBox');
-            const complimentText = document.getElementById('complimentText');
-            const closeBtn = document.getElementById('closeBtn');
-            const uploadArea = document.getElementById('uploadArea');
-            
-            // Sample compliments in Hindlish
-            const compliments = [
-                "Tumhara story dekh ke mujhe khushi mili! Tumhari positivity contagious hai yaar 😊",
-                "Wow, tumne kya ache se enjoy kiya apna moment! Tumhara enthusiasm visible hai 💫",
-                "Tumhare expressions mein jo energy hai na, woh inspire kar rahi hai! Keep shining 🌟",
-                "Tumhara story mere dil ko chhoo gaya! Tum itne genuine ho 💌",
-                "Tumhare har ek expression mein ek alag charm hai! Tum amazing ho ✨"
-            ];
-            
-            shareBtn.addEventListener('click', function() {
-                // Show loading state
-                shareBtn.textContent = 'Analyzing...';
-                shareBtn.disabled = true;
-                
-                // Simulate API call delay
-                setTimeout(function() {
-                    // Get random compliment
-                    const randomCompliment = compliments[Math.floor(Math.random() * compliments.length)];
-                    
-                    // Display compliment
-                    complimentText.textContent = randomCompliment;
-                    complimentBox.style.display = 'block';
-                    uploadArea.style.display = 'none';
-                    
-                    // Reset button
-                    shareBtn.textContent = 'Share Story';
-                    shareBtn.disabled = false;
-                }, 1500);
-            });
-            
-            closeBtn.addEventListener('click', function() {
-                complimentBox.style.display = 'none';
-                uploadArea.style.display = 'block';
-            });
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

@@ -9,15 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Configure Multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Middleware
@@ -29,70 +21,180 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Function to analyze story content using Gemini
-async function analyzeStoryContent(mediaPath, isVideo = false) {
+async function analyzeStoryContent(story, media) {
   try {
-    // For demonstration, we'll simulate analysis
-    // In a real implementation, you would process the actual media file
-    const prompt = `Analyze this story content and provide:
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    
+    let prompt = `Analyze this story content and provide:
     1. A brief description of what you see (20 words max)
     2. The dominant emotion expressed
-    3. The likely gender of the person (if identifiable)
-    4. Preferred language for compliments (english, hindi, or hindlish)
+    3. The likely gender of the person (if identifiable) - options: Male, Female, Group, or Not Identifiable
+    4. Content category - options: Person, Nature, Object, or Mixed
+    5. Preferred language for compliments (english, hindi, or hindlish)
     
-    Base your analysis on typical story content patterns.`;
-
-    // Simulated analysis result
-    const simulatedAnalysis = {
-      description: "User sharing a personal achievement or happy moment",
-      emotion: "Joy",
-      genderLikelihood: "Neutral",
-      languagePreference: "hindlish"
-    };
-
-    return simulatedAnalysis;
-  } catch (error) {
-    console.error('Error analyzing story content:', error);
-    throw error;
-  }
-}
-
-// Function to generate compliment using Gemini
-async function generateCompliment(analysis) {
-  try {
-    // Force hindlish as requested
-    analysis.languagePreference = 'hindlish';
+    Story: ${story}`;
     
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    if (media) {
+      prompt += "\n\nNote: The user also uploaded a media file along with this story. Please analyze the media content as well.";
+    }
     
-    const prompt = `Create a short, personalized compliment in ${analysis.languagePreference} based on:
-    - Description: ${analysis.description}
-    - Emotion: ${analysis.emotion}
-    - Gender: ${analysis.genderLikelihood}
-    
-    Make it Instagram story friendly, casual, and uplifting. Keep it under 15 words.`;
+    prompt += "\n\nBase your analysis on the story content and media patterns. Be specific about gender and content type.";
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
+    const text = response.text();
+    
+    // Parse the analysis response
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const analysis = {
+      description: lines[0] ? lines[0].replace(/^\d+\.\s*/, '') : "User sharing personal thoughts or experiences",
+      emotion: lines[1] ? lines[1].replace(/^\d+\.\s*/, '') : "Neutral",
+      gender: lines[2] ? lines[2].replace(/^\d+\.\s*/, '') : "Not Identifiable",
+      contentCategory: lines[3] ? lines[3].replace(/^\d+\.\s*/, '') : "Mixed",
+      languagePreference: "hindlish" // Force hindlish as requested
+    };
+    
+    return analysis;
+  } catch (error) {
+    console.error('Error analyzing story content:', error);
+    // Return default analysis if AI fails
+    return {
+      description: "User sharing personal thoughts or experiences",
+      emotion: "Joy",
+      gender: "Not Identifiable",
+      contentCategory: "Mixed",
+      languagePreference: "hindlish"
+    };
+  }
+}
+
+// Function to determine compliment mode based on analysis
+function determineMode(analysis) {
+  const emotion = analysis.emotion.toLowerCase();
+  
+  if (emotion.includes('excite') || emotion.includes('happy') || emotion.includes('joy') || emotion.includes('success')) {
+    return 'hype';
+  } else if (emotion.includes('sad') || emotion.includes('lonely') || emotion.includes('thoughtful')) {
+    return 'care';
+  } else if (emotion.includes('friend') || emotion.includes('fun')) {
+    return 'friend';
+  } else if (emotion.includes('deep') || emotion.includes('reflect')) {
+    return 'soul';
+  } else {
+    // Default to friend mode for neutral emotions
+    return 'friend';
+  }
+}
+
+// Function to generate compliment using Gemini based on media analysis
+async function generateCompliment(genAI, analysis, mode, language, story) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    
+    // Define mode descriptions
+    const modeDescriptions = {
+      hype: "Create an enthusiastic, motivational compliment that celebrates achievements and positive energy",
+      care: "Create a warm, empathetic compliment that provides emotional support and comfort",
+      friend: "Create a friendly, casual compliment that feels like it's from a close friend",
+      soul: "Create a thoughtful, introspective compliment that reflects depth and meaning"
+    };
+    
+    // Define language instructions
+    const languageInstructions = {
+      english: "in English",
+      hindi: "in Hindi",
+      hindlish: "in Hindlish (a natural mix of Hindi and English that feels conversational and culturally relatable)"
+    };
+    
+    // Customize prompt based on media analysis
+    let contentSpecificPrompt = "";
+    if (analysis.contentCategory) {
+      if (analysis.contentCategory.includes('Person') || analysis.contentCategory.includes('person')) {
+        if (analysis.gender.includes('Male') || analysis.gender.includes('male')) {
+          contentSpecificPrompt = "The content features a male subject. ";
+        } else if (analysis.gender.includes('Female') || analysis.gender.includes('female')) {
+          contentSpecificPrompt = "The content features a female subject. ";
+        } else if (analysis.gender.includes('Group') || analysis.gender.includes('group')) {
+          contentSpecificPrompt = "The content features a group of people. ";
+        }
+      } else if (analysis.contentCategory.includes('Nature') || analysis.contentCategory.includes('nature')) {
+        contentSpecificPrompt = "The content features nature or outdoor scenes. ";
+      } else if (analysis.contentCategory.includes('Object') || analysis.contentCategory.includes('object')) {
+        contentSpecificPrompt = "The content features objects or items. ";
+      }
+    }
+    
+    const prompt = `You are a one-sided lover figure who gives personalized compliments. 
+    Your task is to create a short, personalized compliment based on:
+    
+    Story: ${story}
+    Emotion: ${analysis.emotion}
+    ${contentSpecificPrompt}
+    
+    Mode: ${mode} - ${modeDescriptions[mode]}
+    
+    Language: ${language} - ${languageInstructions[language]}
+    
+    Make it Instagram story friendly, casual, and uplifting. Keep it under 20 words.
+    The compliment should feel personal and emotionally engaging, like it's from a one-sided lover.
+    Use Hindlish when requested to make it more relatable and culturally contextual.
+    
+    For different content types, adjust your approach:
+    - For people: Focus on their expression, style, or personality
+    - For nature: Appreciate the beauty or serenity
+    - For objects: Comment on aesthetics or significance
+    - For groups: Acknowledge togetherness or shared moments`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text().trim();
   } catch (error) {
     console.error('Error generating compliment:', error);
-    throw error;
+    // Fallback compliment in hindlish
+    const fallbackCompliments = [
+      "Tumhara story dekh ke mujhe khushi mili! Tumhari positivity contagious hai yaar 😊",
+      "Wow, tumne kya ache se enjoy kiya apna moment! Tumhara enthusiasm visible hai 💫",
+      "Tumhare expressions mein jo energy hai na, woh inspire kar rahi hai! Keep shining 🌟"
+    ];
+    
+    return fallbackCompliments[Math.floor(Math.random() * fallbackCompliments.length)];
   }
 }
 
 // API endpoint to process story and generate compliment
 app.post('/api/compliment', upload.single('story'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No story file uploaded' });
+    const { story, mode, language } = req.body;
+    
+    if (!story) {
+      return res.status(400).json({ error: 'Story content is required' });
     }
-
-    const isVideo = req.file.mimetype.startsWith('video');
-    const analysis = await analyzeStoryContent(req.file.path, isVideo);
-    const compliment = await generateCompliment(analysis);
-
+    
+    // Process media if uploaded
+    let media = null;
+    if (req.file) {
+      media = {
+        buffer: req.file.buffer,
+        mimetype: req.file.mimetype
+      };
+    }
+    
+    // Analyze the story content
+    const analysis = await analyzeStoryContent(story, media);
+    
+    // Determine the compliment mode
+    const complimentMode = mode === 'auto' ? determineMode(analysis) : mode;
+    
+    // Determine the language (force hindlish as requested)
+    const complimentLanguage = language || 'hindlish';
+    
+    // Generate the compliment using Gemini
+    const compliment = await generateCompliment(genAI, analysis, complimentMode, complimentLanguage, story);
+    
     res.json({
       compliment: compliment,
+      mode: complimentMode,
+      language: complimentLanguage,
       analysis: analysis
     });
   } catch (error) {
@@ -101,15 +203,13 @@ app.post('/api/compliment', upload.single('story'), async (req, res) => {
   }
 });
 
-// Serve frontend build in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
-  
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
-  });
-}
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Handle all other routes by serving the index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
+});
 
 // Export for Vercel
 module.exports = app;
