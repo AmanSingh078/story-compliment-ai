@@ -30,7 +30,14 @@ module.exports = async (req, res) => {
     // Initialize Google Generative AI with API key from environment variables
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'Gemini API key not configured' });
+      console.error('Gemini API key not configured in environment variables');
+      return res.status(500).json({ error: 'Gemini API key not configured on server' });
+    }
+    
+    // Validate API key format
+    if (apiKey.length < 20) {
+      console.error('Invalid Gemini API key format');
+      return res.status(500).json({ error: 'Invalid Gemini API key configuration' });
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -55,7 +62,14 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     console.error('Error processing compliment:', error);
-    res.status(500).json({ error: 'Failed to generate compliment: ' + error.message });
+    // Provide more specific error messages
+    if (error.message && error.message.includes('API_KEY_INVALID')) {
+      res.status(500).json({ error: 'Invalid Gemini API key. Please check your API key configuration.' });
+    } else if (error.message && error.message.includes('quota')) {
+      res.status(500).json({ error: 'Gemini API quota exceeded. Please try again later.' });
+    } else {
+      res.status(500).json({ error: 'Failed to generate compliment: ' + error.message });
+    }
   }
 };
 
@@ -137,7 +151,7 @@ async function analyzeStoryContent(genAI, story, media) {
 
 // Function to determine compliment mode based on analysis
 function determineMode(analysis) {
-  const emotion = analysis.emotion.toLowerCase();
+  const emotion = (analysis.emotion || "").toLowerCase();
   
   if (emotion.includes('excite') || emotion.includes('happy') || emotion.includes('joy') || emotion.includes('success')) {
     return 'hype';

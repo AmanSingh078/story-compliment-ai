@@ -14,31 +14,73 @@ const upload = multer({ storage: storage });
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase limit for image data
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+let genAI;
+try {
+    if (process.env.GEMINI_API_KEY) {
+        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    } else {
+        console.warn('GEMINI_API_KEY not found in environment variables');
+    }
+} catch (error) {
+    console.error('Failed to initialize Google Generative AI:', error);
+}
 
 // Function to analyze story content using Gemini
 async function analyzeStoryContent(story, media) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
-    
-    let prompt = `Analyze this story content and provide:
-    1. A brief description of what you see (20 words max)
-    2. The dominant emotion expressed
-    3. The likely gender of the person (if identifiable) - options: Male, Female, Group, or Not Identifiable
-    4. Content category - options: Person, Nature, Object, or Mixed
-    5. Preferred language for compliments (english, hindi, or hindlish)
-    
-    Story: ${story}`;
-    
-    if (media) {
-      prompt += "\n\nNote: The user also uploaded a media file along with this story. Please analyze the media content as well.";
+    // Check if API key is configured
+    if (!genAI) {
+      throw new Error('Gemini API not configured');
     }
     
-    prompt += "\n\nBase your analysis on the story content and media patterns. Be specific about gender and content type.";
+    let model;
+    let prompt;
+    
+    // Use Gemini Pro Vision if media is provided
+    if (media) {
+      model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+      
+      prompt = {
+        parts: [
+          {
+            text: `Analyze this story content and the attached media to provide:
+            1. A brief description of what you see (20 words max)
+            2. The dominant emotion expressed
+            3. The likely gender of the person (if identifiable) - options: Male, Female, Group, or Not Identifiable
+            4. Content category - options: Person, Nature, Object, or Mixed
+            5. Preferred language for compliments (english, hindi, or hindlish)
+            
+            Story: ${story}
+            
+            Base your analysis on both the story content and media patterns. Be specific about gender and content type.`
+          },
+          {
+            inlineData: {
+              data: media.data.toString('base64'),
+              mimeType: media.mimetype
+            }
+          }
+        ]
+      };
+    } else {
+      // Use Gemini Pro for text-only analysis
+      model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      
+      prompt = `Analyze this story content and provide:
+      1. A brief description of what you see (20 words max)
+      2. The dominant emotion expressed
+      3. The likely gender of the person (if identifiable) - options: Male, Female, Group, or Not Identifiable
+      4. Content category - options: Person, Nature, Object, or Mixed
+      5. Preferred language for compliments (english, hindi, or hindlish)
+      
+      Story: ${story}
+      
+      Base your analysis on the story content patterns. Be specific about gender and content type.`;
+    }
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -70,7 +112,7 @@ async function analyzeStoryContent(story, media) {
 
 // Function to determine compliment mode based on analysis
 function determineMode(analysis) {
-  const emotion = analysis.emotion.toLowerCase();
+  const emotion = (analysis.emotion || "").toLowerCase();
   
   if (emotion.includes('excite') || emotion.includes('happy') || emotion.includes('joy') || emotion.includes('success')) {
     return 'hype';
@@ -89,6 +131,11 @@ function determineMode(analysis) {
 // Function to generate compliment using Gemini based on media analysis
 async function generateCompliment(genAI, analysis, mode, language, story) {
   try {
+    // Check if API key is configured
+    if (!genAI) {
+      throw new Error('Gemini API not configured');
+    }
+    
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     // Define mode descriptions
@@ -174,7 +221,7 @@ app.post('/api/compliment', upload.single('story'), async (req, res) => {
     let media = null;
     if (req.file) {
       media = {
-        buffer: req.file.buffer,
+        data: req.file.buffer,
         mimetype: req.file.mimetype
       };
     }
@@ -199,7 +246,17 @@ app.post('/api/compliment', upload.single('story'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error processing story:', error);
-    res.status(500).json({ error: 'Failed to process story and generate compliment' });
+    
+    // Provide more specific error messages
+    if (error.message && error.message.includes('API_KEY_INVALID')) {
+      return res.status(500).json({ error: 'Invalid Gemini API key. Please check your API key configuration.' });
+    } else if (error.message && error.message.includes('quota')) {
+      return res.status(500).json({ error: 'Gemini API quota exceeded. Please try again later.' });
+    } else if (error.message && error.message.includes('Gemini API not configured')) {
+      return res.status(500).json({ error: 'Gemini API not configured on server. Please check environment variables.' });
+    } else {
+      return res.status(500).json({ error: 'Failed to process story and generate compliment: ' + error.message });
+    }
   }
 });
 

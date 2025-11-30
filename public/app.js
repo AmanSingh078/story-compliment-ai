@@ -163,7 +163,8 @@ class StoryComplimentAI {
             });
             
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `API error: ${response.status}`);
             }
             
             const data = await response.json();
@@ -192,7 +193,22 @@ class StoryComplimentAI {
             // Show error message
             document.getElementById('loadingSection').style.display = 'none';
             document.getElementById('storySection').style.display = 'block';
-            alert('Failed to generate compliment. Please try again.');
+            
+            // Display more specific error message
+            let errorMessage = 'Failed to generate compliment. Please try again.';
+            if (error.message) {
+                if (error.message.includes('API key')) {
+                    errorMessage = 'Invalid API key configuration. Please check the server configuration.';
+                } else if (error.message.includes('quota')) {
+                    errorMessage = 'API quota exceeded. Please try again later.';
+                } else if (error.message.includes('network')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            alert(errorMessage);
         }
     }
     
