@@ -47,19 +47,32 @@ function App() {
     setShowComplimentPopup(false);
 
     try {
-      // Simulate analysis for demo purposes
-      const simulatedAnalysis = {
-        description: "User sharing a personal achievement or happy moment",
-        emotion: "Joy",
-        genderLikelihood: "Neutral",
-        languagePreference: "hindlish"
-      };
+      let mediaData = null;
+      
+      // Process media if uploaded
+      if (media) {
+        // Convert to base64
+        const reader = new FileReader();
+        mediaData = await new Promise((resolve) => {
+          reader.onload = (e) => {
+            // Remove data URL prefix
+            const base64 = e.target.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.readAsDataURL(media);
+        });
+      }
 
       const requestBody = {
-        analysis: simulatedAnalysis
+        story: '',
+        mode: 'auto',
+        userId: 'user123', // In a real app, this would be from auth
+        media: mediaData ? {
+          data: mediaData,
+          type: media.type
+        } : undefined
       };
 
-      // Updated API endpoint for Vercel
       const response = await fetch('/api/compliment', {
         method: 'POST',
         headers: {
@@ -145,13 +158,13 @@ function App() {
               />
               {mediaPreview && (
                 <div className="media-preview">
-                  {media && media.type.startsWith('image/') ? (
+                  {media.type.startsWith('image/') ? (
                     <img src={mediaPreview} alt="Preview" className="preview-image" />
                   ) : (
                     <div className="preview-video-placeholder">
                       <p>🎥</p>
                       <p>Video Preview</p>
-                      <p>{media ? media.name : ''}</p>
+                      <p>{media.name}</p>
                     </div>
                   )}
                 </div>
